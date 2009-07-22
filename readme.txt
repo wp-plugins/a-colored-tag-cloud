@@ -3,8 +3,8 @@ Contributors: stevejohnson
 Donate link: http://ilikewordpress.com/donate/
 Tags: tag cloud
 Requires at least: 2.5
-Tested up to: 2.7.1
-stable tag: 1.1
+Tested up to: 2.8.2
+stable tag: 1.2
 
 Displays a configurable colored tag cloud as a widget, or in your template, or both.
 
@@ -13,7 +13,11 @@ Displays a configurable colored tag cloud as a widget, or in your template, or b
 Displays a configurable colored tag cloud as a widget, or in your template, or both.
 
 Changelog:
-2009-04-16	Added option to control # of tags displayed.
+v 1.2
+	changed the way default options are handled on initialization
+	changed to retrieve top tags before random sort of tag cloud
+v 1.1
+	Added option to control # of tags displayed.
 
 == Installation ==
 

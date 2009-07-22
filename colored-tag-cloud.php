@@ -3,7 +3,7 @@
  * Plugin Name: ILWP Colored Tag Cloud
  * Plugin URI: http://ilikewordpress.com/colored-tag-cloud/
  * Description: An expansion of the standard WP tag cloud widget. Adds colors, min/max sizes, and the option to include in template.
- * Version: 1.1
+ * Version: 1.2
  * Author: Steve Johnson
  * Author URI: http://ilikewordpress.com/
  */
@@ -25,7 +25,28 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-	define( 'ILWP_CTC_VERSION', 1.1 );
+	define( 'ILWP_CTC_VERSION', 1.2 );
+	
+	function ilwp_set_defaults() {
+		$options = get_option('ilwp_widget_tag_cloud');
+		## if options already set, return, this isn't necessary
+		if ( $options ) {
+			return;
+		} else {
+			$default_colors = array(	'aqua', 'black', 'blue', 'fuchsia',
+										'gray', 'green', 'lime', 'maroon',
+										'navy', 'olive', 'purple', 'red',
+										'silver', 'teal', 'white', 'yellow');
+
+			$options['color_names'] = $default_colors;
+			$options['min_size']			= 8;
+			$options['max_size']			= 20;
+			$options['use_colors']		= true;
+			$options['use_color_names']	= true;
+			$options['number']			= 45;
+			update_option('ilwp_widget_tag_cloud', $options);
+		}
+	}
 	
 	function ilwp_colored_tag_cloud_options_page() {
 		
@@ -177,13 +198,13 @@
 
 		$defaults = array(
 			'unit' => 'pt', 'number' => 45,
-			'format' => 'flat', 'orderby' => 'name', 'order' => 'ASC',
+			'format' => 'flat', 'orderby' => 'count', 'order' => 'RAND',
 			'exclude' => '', 'include' => ''
 		);
 		
 		$args = wp_parse_args( $args, $defaults );
 		
-		$tags = get_tags( array_merge( $args, array('orderby' => 'name', 'order' => 'DESC' ) ) ); // Always query top tags
+		$tags = get_tags( array_merge( $args, array('orderby' => 'count', 'order' => 'DESC' ) ) ); // Always query top tags
 		if ( empty( $tags ) )
 			return;
 		$return = ilwp_generate_tag_cloud( $tags, $args ); // Here's where those top tags get sorted according to $args
@@ -200,8 +221,8 @@
 
 		$defaults = array(
 			'unit' => 'pt', 'number' => 45,
-			'format' => 'flat', 'orderby' => 'name',
-			'order' => 'ASC'
+			'format' => 'flat', 'orderby' => 'count',
+			'order' => 'DESC'
 		);
 
 		$args = wp_parse_args( $args, $defaults );
@@ -312,6 +333,8 @@
 		$widget_ops = array('classname' => 'ilwp_widget_tag_cloud', 'description' => __( "A really cool COLORED tag cloud") );
 		wp_register_sidebar_widget('ilwp_tag_cloud', __('ILWP Colored Tag Cloud'), 'ilwp_widget_tag_cloud', $widget_ops);
 		wp_register_widget_control('ilwp_tag_cloud', __('ILWP Colored Tag Cloud'), 'ilwp_widget_tag_cloud_control' );
+		## set default options
+		ilwp_set_defaults();
 	}
 
 
