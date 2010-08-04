@@ -228,7 +228,7 @@
 		$args = wp_parse_args( $args, $defaults );
 		extract($args);
 
-		if ( !is_array( $tags ) || empty( $tags ) )
+		if ( !is_array( $tags ) || empty( $tags ) || count( $tags ) < 2 )
 			return;
 
 		$counts = $tag_links = array();
