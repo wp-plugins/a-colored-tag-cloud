@@ -2,8 +2,8 @@
 /**
  * Plugin Name: ILWP Colored Tag Cloud
  * Plugin URI: http://ilikewordpress.com/colored-tag-cloud/
- * Description: An expansion of the standard WP tag cloud widget. Adds colors, min/max sizes, and the option to include in template.
- * Version: 1.3
+ * Description: An expansion of the standard WP tag cloud widget. Adds colors, min/max sizes, sort order and other options. For more info on the <acronym title="I Like WordPress!">ILWP</acronym> Colored Tag Cloud plugin, please <a href="http://ilikewordpress.com/colored-tag" title="The ILWP Colored Tag Cloud plugin home page">visit the plugin page</a>. Feel free to leave comments or post feature requests.
+ * Version: 2.0
  * Author: Steve Johnson
  * Author URI: http://ilikewordpress.com/
  */
@@ -25,87 +25,247 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-	define( 'ILWP_CTC_VERSION', 1.2 );
+	define( 'ILWP_CTC_VERSION', 2.0 );
 	
-	function ilwp_set_defaults() {
-		$options = get_option('ilwp_widget_tag_cloud');
-		## if options already set, return, this isn't necessary
-		if ( $options ) {
+	function ilwp_tag_cloud( $args ) {
+		
+		// Always query top tags
+		$tags = get_tags( array('orderby' => 'count', 'order' => 'DESC' ) );
+		if ( empty( $tags ) || 2 > sizeof( $tags ) || !is_array( $tags ) )
 			return;
+
+		$return = ilwp_generate_tag_cloud( $tags, $args ); // Here's where those top tags get sorted according to $args
+
+		if ( is_wp_error( $return ) )
+			return false;
+		echo $return;
+	}
+
+	function ilwp_generate_tag_cloud( $tags, $args = '' ) {
+		global $wp_rewrite;
+
+		$defaults = array(
+							'sort'		=> 'count',
+							'order'		=> 'ASC',
+							'number'	=> 0
+							);
+
+		## wp_parse_args merges $args & $defaults
+		## then generates variables from array keys
+		$args = wp_parse_args( $args, $defaults );
+		extract( $args );
+		// $min_size, $max_size, $number, $color_names, $use_colors, $use_color_names, $sort, $order
+
+		if ( 'random' == $sort ) {
+			shuffle($tags);
 		} else {
+			// SQL cannot save you; this is a second (potentially different) sort on a subset of data.
+			if ( 'name' == $sort )
+				uasort( $tags, create_function('$a, $b', 'return strnatcasecmp($a->name, $b->name);') );
+			else
+				uasort( $tags, create_function('$a, $b', 'return ($a->count > $b->count);') );
+			if ( 'DESC' == $order )
+				$tags = array_reverse( $tags, true );
+		}
+
+		if ( $number > 0 )
+			$tags = array_slice( $tags, 0, $number );
+		
+		$counts = $tag_links = array();
+		foreach ( $tags as $tag ) {
+			$counts[ $tag->name ] = $tag->count;
+			$tag_links[ $tag->name ] = get_tag_link( $tag->term_id );
+			$tag_ids[ $tag->name ] = $tag->term_id;
+		}
+		
+		$min_count = min($counts);
+		$spread = max($counts) - $min_count;
+		if ( $spread <= 0 )
+			$spread = 1;
+		$font_spread = $max_size - $min_size;
+		
+		if ( $font_spread <= 0 )
+			$font_spread = 1;
+		$font_step = $font_spread / $spread;
+		
+		
+		$a = array();
+		
+		$rel = ( is_object($wp_rewrite) && $wp_rewrite->using_permalinks() ) ? ' rel="tag"' : '';
+		$pre = ( $use_color_names ) ? '' : '#';
+		$c = sizeof( $color_names );
+		foreach ( $counts as $tag => $count ) {
+			$tag_id = $tag_ids[$tag];
+			$tag_link = clean_url($tag_links[$tag]);
+			if ( $use_colors ) :
+				$color = rand( 0, $c );
+				$colorstyle = " color: $pre" . $color_names[$color] . ";";
+			else :
+				$colorstyle = "";
+			endif;
+			$a[] = "<a href='$tag_link' class='tag-link-$tag_id' title='" . attribute_escape( sprintf( __ngettext('%d post is','%d posts are', $count), $count ) ) . " tagged with &ldquo;$tag&rdquo;'$rel style='font-size: " .
+				( $min_size + ( ( $count - $min_count ) * $font_step ) )
+				. "px; $colorstyle'>$tag</a>";
+		}
+		$cloud = join("\n", $a);
+		return $cloud;
+	}
+
+	/**
+	* Version 2.0
+	* Switches to multi-instance widget via WP_Widget API
+	*/
+
+	// going to change the options for this version to easily
+	// check for out-of-date plugins, as I neglected to add-in
+	// a version option
+	
+	if ( !get_option('widget_ilwp_tag_cloud_version') )
+		update_option( 'widget_ilwp_tag_cloud_version', '2.0' );
+	if ( get_option( 'ilwp_widget_tag_cloud' ) )
+		delete_option( 'ilwp_widget_tag_cloud' );
+	
+	/**
+	* ILWPColoredTagCloud Class
+	*/
+	class ILWPColoredTagCloud extends WP_Widget {
+		/** constructor */
+		function ILWPColoredTagCloud() {
+			$widget_ops = array('classname' => 'ilwp_widget_tag_cloud', 'description' => __( "A really cool COLORED tag cloud") );
+			$control_ops = array('width' => 400, 'height' => 350);
+			$this->WP_Widget( 'ilwp_tag_cloud', __('ILWP Colored Tag Cloud'), $widget_ops, $control_ops );
+			## parent::WP_Widget(false, $name = 'ILWPColoredTagCloud');
+		}
+
+		/** @see WP_Widget::widget */
+		function widget( $args, $instance ) {
+			extract( $args );
+			
 			$default_colors = array(	'aqua', 'black', 'blue', 'fuchsia',
 										'gray', 'green', 'lime', 'maroon',
 										'navy', 'olive', 'purple', 'red',
 										'silver', 'teal', 'white', 'yellow');
 
-			$options['color_names'] = $default_colors;
-			$options['min_size']			= 8;
-			$options['max_size']			= 20;
-			$options['use_colors']		= true;
-			$options['use_color_names']	= true;
-			$options['number']			= 45;
-			update_option('ilwp_widget_tag_cloud', $options);
+			$default['title']			= 'Tags';
+			$default['min_size']		= 8;
+			$default['max_size']		= 40;
+			$default['use_colors']		= true;
+			$default['use_color_names']	= true;
+			$default['number']			= 0;
+			$default['sort']			= 'random';
+			$default['order']			= 'ASC';
+			$default['color_names']		= $default_colors;
+			$instance = wp_parse_args( $instance, $default );
+			extract( $instance );
+			
+			$title = apply_filters( 'widget_title', $instance['title'] );
+			
+			echo $before_widget;
+			echo $before_title . $title . $after_title;
+			ilwp_tag_cloud( $instance );
+			echo $after_widget . "\n\n";
 		}
-	}
-	
-	function ilwp_colored_tag_cloud_options_page() {
-		
-		$options = $newoptions = get_option('ilwp_widget_tag_cloud');
-		$default_colors = array(	'aqua', 'black', 'blue', 'fuchsia',
-											'gray', 'green', 'lime', 'maroon',
-											'navy', 'olive', 'purple', 'red',
-											'silver', 'teal', 'white', 'yellow');
 
-		## add some defaults
-		if ( ! $options ) :
-			$newoptions['color_names'] = $default_colors;
-			$newoptions['min_size']			= 8;
-			$newoptions['max_size']			= 20;
-			$newoptions['use_colors']		= true;
-			$newoptions['use_color_names']	= true;
-			$newoptions['number']			= 45;
-		endif;
-		
-		## new option for v1.1
-		if ( !isset( $newoptions['number']) )
-			$newoptions['number'] = 45;
-		
-		if ( isset( $_POST['ilwp-tag-cloud-submit'] ) && $_POST['ilwp-tag-cloud-submit'] != '' ) {
-			$newoptions['min_size']			= strip_tags(stripslashes($_POST['ilwp-tag-cloud-min-size']));
-			$newoptions['max_size']			= strip_tags(stripslashes($_POST['ilwp-tag-cloud-max-size']));
-			$newoptions['use_colors']		= strip_tags(stripslashes($_POST['ilwp-tag-cloud-colors']));
-			$newoptions['use_color_names']	= strip_tags(stripslashes($_POST['ilwp-tag-cloud-color-names']));
-			$newoptions['number']			= intval( $_POST['ilwp-tag-cloud-number']);
-			## make sure the color list is populated
-			if ( $_POST['ilwp-tag-cloud-color-list'] == '' ) :
-				$newcolors = $default_colors;
-			else :			
+		/** @see WP_Widget::update */
+		function update( $new_instance, $old_instance ) {
+			$instance = $old_instance;
+			$instance['title'] = strip_tags($new_instance['title']);
+			$instance['min_size'] = ( $new_instance['min_size'] > 10 ) ? 10 : intval( $new_instance['min_size'] );
+			$instance['max_size'] = ( $new_instance['max_size'] > 40 && $instance['min_size'] < $new_instance['max_size'] ) ? 40 : intval( $new_instance['max_size'] );
+			if ( $instance['max_size'] < $instance['min_size'] + 2 )
+				$instance['max_size'] = intval( $instance['min_size'] + 2 );
+			$instance['use_colors'] = $new_instance['use_colors'];
+			$instance['use_color_names'] = $new_instance['use_color_names'];
+			$instance['number'] = ( 0 == $new_instance['number'] ) ? 0 : intval( $new_instance['number'] );
+			$instance['sort'] = $new_instance['sort'];
+			
 				## get color names/numbers into an array
-				$str = $_POST['ilwp-tag-cloud-color-list'];
+				$str = $new_instance['color_names'];
 				## replace spaces with pipes
 				$str = preg_replace('/\s+/', '|', $str);
 				$str = trim( $str, "|" );
-				
 				## get rid of any hash marks ppl might have put in
 				$str = str_replace( '#', '', $str );				
-				$newcolors = explode( '|', $str );
-			endif;
-			$newoptions['color_names'] = $newcolors;
+				$newcolors = explode( '|', $str );				
+			$instance['color_names'] = $newcolors;
+			
+			return $instance;
 		}
-		
-		if ( $options != $newoptions ) {
-			$options = $newoptions;
-			update_option('ilwp_widget_tag_cloud', $options);
-		}
-		
-		$minsize = $options['min_size'];
-		$maxsize = $options['max_size'];
-		$colors = implode( $options['color_names'], "\r\n" );
-?>		
-		<div class="wrap">
-			<div style="padding: 10px; border: 1px dotted #ccc; width: 250px; float: right; margin-right: 10px; margin-left: 30px; text-align: center;">
-				<h3>Like <acronym title="I Like WordPress!">ILWP</acronym> Colored Tag Cloud</h3>
-				<h4>Consider making a donation!</h4>
+
+		/** @see WP_Widget::form */
+		function form( $instance ) {
+
+			$default_colors = array(	'aqua', 'black', 'blue', 'fuchsia',
+										'gray', 'green', 'lime', 'maroon',
+										'navy', 'olive', 'purple', 'red',
+										'silver', 'teal', 'white', 'yellow');
+			$default['color_names']		= $default_colors;
+			$default['min_size']		= 8;
+			$default['max_size']		= 40;
+			$default['use_colors']		= true;
+			$default['use_color_names']	= true;
+			$default['number']			= 0;
+			$default['sort']			= 'random';
+			$default['order']			= 'ASC';
+
+			$instance = wp_parse_args( $instance, $default );
+			extract( $instance );
+
+			$title = esc_attr( $instance['title']);
+			$colors = implode( $instance['color_names'], "\r\n" );
+			?>
+			<p>
+				<label for="<?php echo $this->get_field_id('title'); ?>"><?php _e('Title:'); ?>
+					<input class="widefat" id="<?php echo $this->get_field_id('title'); ?>" name="<?php echo $this->get_field_name('title'); ?>" type="text" value="<?php echo $title; ?>" />
+				</label>
+			</p>
+			<p>
+				<label for="<?php echo $this->get_field_id('number'); ?>">Display how many tags? <small>( 15-50 recommended, 0 = all ):</small>
+					<input class="small-text" id="<?php echo $this->get_field_id('number'); ?>" name="<?php echo $this->get_field_name('number'); ?>" type="text" value="<?php echo $number; ?>" />
+				</label>
+			</p>
+			<p>
+				<label for="<?php echo $this->get_field_id('min_size'); ?>">Smallest tag size <small>( 6-8 recommended, 10 max ):</small>
+					<input class="small-text" id="<?php echo $this->get_field_id('min_size'); ?>" name="<?php echo $this->get_field_name('min_size'); ?>" type="text" value="<?php echo $min_size; ?>" />px
+				</label>
+			</p>
+			<p>
+				<label for="<?php echo $this->get_field_id('max_size'); ?>">Largest tag size <small>( 18-25 recommended, <?php echo $min_size + 2; ?> min, 40 max):</small>
+					<input class="small-text" id="<?php echo $this->get_field_id('max_size'); ?>" name="<?php echo $this->get_field_name('max_size'); ?>" type="text" value="<?php echo $max_size; ?>" />px
+				</label>
+			</p>
+			<p>
+				<label for="<?php echo $this->get_field_id('sort'); ?>">Sort tags by: 
+					<select class="postform" id="<?php echo $this->get_field_id('sort'); ?>" name="<?php echo $this->get_field_name('sort'); ?>" >
+						<option value="count" <?php $selected = ($sort=='count')? 'selected="selected"' : ""; echo $selected; ?>>Most used to least used</option>
+						<option value="name" <?php $selected = ($sort=='name')? 'selected="selected"' : ""; echo $selected; ?>>Alphabetical A-Z</option>
+						<option value="random" <?php $selected = ($sort=='random')? 'selected="selected"' : ""; echo $selected; ?>>Random</option>
+					</select>
+				</label>
+			</p>
+			<p>
+				<label for="<?php echo $this->get_field_id('use_colors'); ?>">Use colors? yes: 
+					<input class="static_class" id="<?php echo $this->get_field_id('use_colors'); ?>" name="<?php echo $this->get_field_name('use_colors'); ?>" type="radio" value="1" <?php if ( 1 == $use_colors ) echo 'checked="checked"'; ?> />
+				</label>
+				<label for="<?php echo $this->get_field_id('use_colors'); ?>"> or no: 
+					<input class="static_class" id="<?php echo $this->get_field_id('use_colors'); ?>" name="<?php echo $this->get_field_name('use_colors'); ?>" type="radio" value="0" <?php if ( 0 == $use_colors ) echo 'checked="checked"'; ?> />
+			</p>
+			<fieldset id="colors">
+				<p>
+					<label for="<?php echo $this->get_field_id('use_color_names'); ?>">Use color NAMES 
+						<input id="<?php echo $this->get_field_id('use_color_names'); ?>" name="<?php echo $this->get_field_name('use_color_names'); ?>" type="radio" value="1" <?php if ( 1 == $use_color_names ) echo 'checked="checked"'; ?> />
+					</label>
+					<label for="<?php echo $this->get_field_id('use_color_names'); ?>">or NUMBERS 
+						<input id="<?php echo $this->get_field_id('use_color_names'); ?>" name="<?php echo $this->get_field_name('use_color_names'); ?>" type="radio" value="0" <?php if ( 0 == $use_color_names ) echo 'checked="checked"'; ?> />
+					</label>
+				</p>
+				<p>
+					<label for="<?php echo $this->get_field_id('color_names'); ?>">Color names:<br /><small>You can use either named colors or hex color numbers, but not both. Do not enter the # mark if you're using numbers. If you're using numbers, you can use the shorthand 3-digit or full-length 6-digit number. Be sure to set the above 'names or numbers' option appropriately, or you will see unexpected results :-)</small><br />
+						<textarea id="<?php echo $this->get_field_id('color_names'); ?>" name="<?php echo $this->get_field_name('color_names'); ?>" rows="8" ><?php echo $colors; ?></textarea>
+					</label>
+				</p>
+			</fieldset>
+			<div style="padding: 10px; border: 1px dotted #ccc; margin-right: 10px; margin-left: 10px; text-align: center;">
 				<p><small>Donations help with the ongoing development and feature additions of <acronym title="I Like WordPress!">ILWP</acronym> Colored Tag Cloud. Thank you!</small></p>
 				<form action="https://www.paypal.com/cgi-bin/webscr" method="post">
 					<input type="hidden" name="cmd" value="_s-xclick" />
@@ -114,231 +274,15 @@
 					<img alt="" border="0" src="https://www.paypal.com/en_US/i/scr/pixel.gif" width="1" height="1" />
 				</form>
 			</div>
-			<form method="post" action="">
-			<?php wp_nonce_field('update-options'); ?>
-				<h2><acronym title="I Like WordPress!">ILWP</acronym> Colored Tag Cloud v. <?php echo ILWP_CTC_VERSION ;?> ~ General Options</h2>
-				<p>For more info on the <acronym title="I Like WordPress!">ILWP</acronym> Colored Tag Cloud plugin, please <a href="http://ilikewordpress.com/colored-tag" title="The ILWP Colored Tag Cloud plugin home page">visit the plugin page</a>. Feel free to leave comments or post feature requests.</p>
-				<table style="clear: none; width: inherit" class="form-table">
-					<tr valign="top">
-						<th scope="row"><label for="ilwp-tag-cloud-number"><?php _e('Display how many tags?') ?><br /><small> suggested: 30-50, default 45</small></label></th>
-						<td>
-							<input type="text" style="width: 35px;" name="ilwp-tag-cloud-number" value="<?php echo $newoptions['number']; ?>" />
-						</td>
-					</tr>
-					<tr valign="top">
-						<th scope="row"><label for="ilwp-tag-cloud-colors"><?php _e('Use colors?') ?></label></th>
-						<td>
-							<select id="ilwp-tag-cloud-colors" name="ilwp-tag-cloud-colors" >
-								<option value="1" <?php $selected = ( $newoptions['use_colors'] == true )? 'selected="selected"' : ""; echo $selected; ?>>yes </option>
-								<option value="0" <?php $selected = ( $newoptions['use_colors'] == false )? 'selected="selected"' : ""; echo $selected; ?>>no </option>
-							</select>
-						</td>
-					</tr>
-					<tr valign="top">
-						<th scope="row"><label for="ilwp-tag-cloud-color-names"><?php _e('Use color numbers or names?') ?></label></th>
-						<td>
-							<select id="ilwp-tag-cloud-color-names" name="ilwp-tag-cloud-color-names" >
-								<option value="1" <?php $selected = ( $newoptions['use_color_names'] == true )? 'selected="selected"' : ""; echo $selected; ?>>names </option>
-								<option value="0" <?php $selected = ( $newoptions['use_color_names'] == false )? 'selected="selected"' : ""; echo $selected; ?>>numbers</option>
-							</select>
-						</td>
-					</tr>
-					<tr valign="top">
-						<th scope="row"><label for="ilwp-tag-cloud-color-list"><?php _e('Color list (one per line):') ?><br /><small>You can use either named colors or hex color numbers, but not both. Do not enter the # mark if you're using numbers. If you're using numbers, you can use the shorthand 3-digit or full-length 6-digit number. Be sure to set the above 'names or numbers' option appropriately, or you will see unexpected results :-)</small></label></th>
-						<td>							
-							<textarea id="ilwp-tag-cloud-color-list" name="ilwp-tag-cloud-color-list" rows="8" ><?php echo $colors; ?></textarea>
-						</td>
-					</tr>
-					<tr valign="top">
-						<th scope="row"><label for="ilwp-tag-cloud-min-size"><?php _e('Min font size:') ?></label></th>
-						<td>							
-							<select style="width: 50px;" id="ilwp-tag-cloud-min-size" name="ilwp-tag-cloud-min-size" >
-								<option <?php $selected = ($minsize=='6')? 'selected="selected"' : ""; echo $selected; ?>>6 </option>
-								<option <?php $selected = ($minsize=='7')? 'selected="selected"' : ""; echo $selected; ?>>7 </option>
-								<option <?php $selected = ($minsize=='8')? 'selected="selected"' : ""; echo $selected; ?>>8 </option>
-								<option <?php $selected = ($minsize=='9')? 'selected="selected"' : ""; echo $selected; ?>>9 </option>
-								<option <?php $selected = ($minsize=='10')? 'selected="selected"' : ""; echo $selected; ?>>10 </option>
-							</select>
-						</td>
-					</tr>
-					<tr valign="top">
-						<th scope="row"><label for="ilwp-tag-cloud-max-size"><?php _e('Max font size:') ?></label></th>
-						<td>							
-							<select style="width: 50px;" id="ilwp-tag-cloud-max-size" name="ilwp-tag-cloud-max-size" >
-								<option <?php $selected = ($maxsize=='18')? 'selected="selected"' : ""; echo $selected; ?>>18 </option>
-								<option <?php $selected = ($maxsize=='20')? 'selected="selected"' : ""; echo $selected; ?>>20 </option>
-								<option <?php $selected = ($maxsize=='22')? 'selected="selected"' : ""; echo $selected; ?>>22 </option>
-								<option <?php $selected = ($maxsize=='26')? 'selected="selected"' : ""; echo $selected; ?>>26 </option>
-								<option <?php $selected = ($maxsize=='30')? 'selected="selected"' : ""; echo $selected; ?>>30 </option>
-							</select>
-						</td>
-					</tr>
-				</table>
-				<input type="hidden" name="ilwp-tag-cloud-submit" id="ilwp-tag-cloud-submit" value="1" />
-				<input type="submit" name="Submit" value="<?php _e('Save Changes') ?>" />
-			</form>
-		</div>
-<?php
-	} ## end options page
-
-	function ctg_options_page () {
-		add_options_page('Colored Tag Cloud Options', 'Colored Tag Cloud', 8, 'colored-tag-cloud/colored-tag-cloud.php', 'ilwp_colored_tag_cloud_options_page');
-	}
-	
-
-	function ilwp_tag_cloud() {
-		$options = get_option('ilwp_widget_tag_cloud');
-		
-		$args['smallest']	 = $options['min_size'];
-		$args['number']		 = $options['number'];
-		$args['largest']	 = $options['max_size'];
-		$args['colors']		 = $options['color_names'];
-		$args['use_colors']	 = ( bool )$options['use_colors'];
-		$args['use_names']	 = ( bool )$options['use_color_names'];
-
-		$defaults = array(
-			'unit' => 'pt', 'number' => 45,
-			'format' => 'flat', 'orderby' => 'count', 'order' => 'RAND',
-			'exclude' => '', 'include' => ''
-		);
-		
-		$args = wp_parse_args( $args, $defaults );
-		
-		$tags = get_tags( array_merge( $args, array('orderby' => 'count', 'order' => 'DESC' ) ) ); // Always query top tags
-		if ( empty( $tags ) )
-			return;
-		$return = ilwp_generate_tag_cloud( $tags, $args ); // Here's where those top tags get sorted according to $args
-		if ( is_wp_error( $return ) )
-			return false;
-		$return = apply_filters( 'ilwp_tag_cloud', $return, $args );
-		if ( 'array' == $args['format'] )
-			return $return;
-		echo $return;
-	}
-
-	function ilwp_generate_tag_cloud( $tags, $args = '' ) {
-		global $wp_rewrite;
-
-		$defaults = array(
-			'unit' => 'pt', 'number' => 45,
-			'format' => 'flat', 'orderby' => 'count',
-			'order' => 'DESC'
-		);
-
-		$args = wp_parse_args( $args, $defaults );
-		extract($args);
-
-		if ( !is_array( $tags ) || empty( $tags ) || count( $tags ) < 2 )
-			return;
-
-		$counts = $tag_links = array();
-		foreach ( (array) $tags as $tag ) {
-			$counts[$tag->name] = $tag->count;
-			$tag_links[$tag->name] = get_tag_link( $tag->term_id );
-			if ( is_wp_error( $tag_links[$tag->name] ) )
-				return $tag_links[$tag->name];
-			$tag_ids[$tag->name] = $tag->term_id;
+			<?php 
 		}
-		$min_count = min($counts);
-		$spread = max($counts) - $min_count;
-		if ( $spread <= 0 )
-			$spread = 1;
-		$font_spread = $largest - $smallest;
-		if ( $font_spread <= 0 )
-			$font_spread = 1;
-		$font_step = $font_spread / $spread;
-		// SQL cannot save you; this is a second (potentially different) sort on a subset of data.
-		if ( 'name' == $orderby )
-			uksort($counts, 'strnatcasecmp');
-		else
-			asort($counts);
-		if ( 'DESC' == $order )
-			$counts = array_reverse( $counts, true );
-		elseif ( 'RAND' == $order ) {
-			$keys = array_rand( $counts, count($counts) );
-			foreach ( $keys as $key )
-				$temp[$key] = $counts[$key];
-			$counts = $temp;
-			unset($temp);
-		}
-		$a = array();
-		$rel = ( is_object($wp_rewrite) && $wp_rewrite->using_permalinks() ) ? ' rel="tag"' : '';
-		$pre = ( $use_names ) ? '' : '#';
-		$c = sizeof( $colors );
-		foreach ( $counts as $tag => $count ) {
-			$tag_id = $tag_ids[$tag];
-			$tag_link = clean_url($tag_links[$tag]);
-			if ( $use_colors ) :
-				$color = rand( 0, $c );
-				$colorstyle = " color: $pre" . $colors[$color] . ";";
-			else :
-				$colorstyle = "";
-			endif;
-			$a[] = "<a href='$tag_link' class='tag-link-$tag_id' title='" . attribute_escape( sprintf( __ngettext('%d topic','%d topics',$count), $count ) ) . "'$rel style='font-size: " .
-				( $smallest + ( ( $count - $min_count ) * $font_step ) )
-				. "$unit;$colorstyle'>$tag</a>";
-		}
-		switch ( $format ) :
-		case 'array' :
-			$return =& $a;
-			break;
-		case 'list' :
-			$return = "<ul class='ilwp-tag-cloud'>\n\t<li>";
-			$return .= join("</li>\n\t<li>", $a);
-			$return .= "</li>\n</ul>\n";
-			break;
-		default :
-			$return = join("\n", $a);
-			break;
-		endswitch;
-		return apply_filters( 'ilwp_generate_tag_cloud', $return, $tags, $args );
-	}
+	} // class ILWPColoredTagCloud
 
-	function ilwp_widget_tag_cloud($args) {
-		extract($args);
-		$options = get_option('ilwp_widget_tag_cloud');
-		$title = empty($options['title']) ? __('Tags') : apply_filters('widget_title', $options['title']);
-		
-		echo $before_widget;
-		echo $before_title . $title . $after_title;
-		ilwp_tag_cloud();
-		echo $after_widget . "\n\n";
-	}
-
-	function ilwp_widget_tag_cloud_control() {
-		$options = $newoptions = get_option('ilwp_widget_tag_cloud');
-		
-		if ( isset( $_POST['ilwp-tag-cloud-submit'] ) && $_POST['ilwp-tag-cloud-submit'] == 1 ) {
-			$newoptions['title'] = strip_tags( stripslashes( attribute_escape($_POST['ilwp-tag-cloud-title'] ) ) );
-		}
-		
-		if ( $options != $newoptions ) {
-			$options = $newoptions;
-			update_option('ilwp_widget_tag_cloud', $options);
-		}
-		
-		$title = ( !isset( $options['title'] ) || $options['title'] == '' ) ? '' : $options['title'];
-		
-	?>
-		<p><label for="ilwp-tag-cloud-title">
-		<?php _e('Title:') ?> <input type="text" class="widefat" id="ilwp-tag-cloud-title" name="ilwp-tag-cloud-title" value="<?php echo $title ?>" /></label>
-		</p>
-		<input type="hidden" name="ilwp-tag-cloud-submit" id="ilwp-tag-cloud-submit" value="1" />
-	<?php
-	}
-
-	function ilwp_widgets_init() {
-		if ( !is_blog_installed() )
-			return;
-		$widget_ops = array('classname' => 'ilwp_widget_tag_cloud', 'description' => __( "A really cool COLORED tag cloud") );
-		wp_register_sidebar_widget('ilwp_tag_cloud', __('ILWP Colored Tag Cloud'), 'ilwp_widget_tag_cloud', $widget_ops);
-		wp_register_widget_control('ilwp_tag_cloud', __('ILWP Colored Tag Cloud'), 'ilwp_widget_tag_cloud_control' );
-		## set default options
-		ilwp_set_defaults();
-	}
+	add_action('widgets_init', create_function('', 'return register_widget("ILWPColoredTagCloud");'));
 
 
-add_action( 'init', 'ilwp_widgets_init', 1 );
-add_action( 'admin_menu', 'ctg_options_page' );
+
+
+
 
 ?>

@@ -1,10 +1,10 @@
 === ILWP Colored Tag Cloud ===
 Contributors: stevejohnson
 Donate link: http://ilikewordpress.com/donate/
-Tags: tag cloud
-Requires at least: 2.5
-Tested up to: 3.0
-stable tag: 1.3
+Tags: tag cloud, colored tag cloud
+Requires at least: 2.8
+Tested up to: 3.0.1
+stable tag: 2.0
 
 Displays a configurable colored tag cloud as a widget, or in your template, or both.
 
@@ -13,6 +13,9 @@ Displays a configurable colored tag cloud as a widget, or in your template, or b
 Displays a configurable colored tag cloud as a widget, or in your template, or both.
 
 Changelog:
+v 2.0
+	Added sort option - Name, Most Used, Random
+	Updated to multi-instance widget using WordPress WP_Widget API
 v 1.3
 	Updated for WP 3.0.
 v 1.2
