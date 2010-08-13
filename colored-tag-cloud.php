@@ -3,12 +3,12 @@
  * Plugin Name: ILWP Colored Tag Cloud
  * Plugin URI: http://ilikewordpress.com/colored-tag-cloud/
  * Description: An expansion of the standard WP tag cloud widget. Adds colors, min/max sizes, sort order and other options. For more info on the <acronym title="I Like WordPress!">ILWP</acronym> Colored Tag Cloud plugin, please <a href="http://ilikewordpress.com/colored-tag" title="The ILWP Colored Tag Cloud plugin home page">visit the plugin page</a>. Feel free to leave comments or post feature requests.
- * Version: 2.0
+ * Version: 2.0.1
  * Author: Steve Johnson
  * Author URI: http://ilikewordpress.com/
  */
 
-/*  Copyright 2009  Steve Johnson  (email : steve@ilikewordpress.com)
+/*  Copyright 2009-2010 Steve Johnson  (email : steve@ilikewordpress.com)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -27,7 +27,25 @@
 
 	define( 'ILWP_CTC_VERSION', 2.0 );
 	
-	function ilwp_tag_cloud( $args ) {
+	function ilwp_tag_cloud( $args = '' ) {
+		// for those calling the function directly from template,
+		// add default arguments
+		
+		$default_colors = array(	'aqua', 'black', 'blue', 'fuchsia',
+									'gray', 'green', 'lime', 'maroon',
+									'navy', 'olive', 'purple', 'red',
+									'silver', 'teal', 'white', 'yellow');
+
+		$default['min_size']		= 8;
+		$default['max_size']		= 40;
+		$default['number']			= 0;
+		$default['use_colors']		= true;
+		$default['use_color_names']	= true;
+		$default['sort']			= 'random';
+		$default['order']			= 'ASC';
+		$default['color_names']		= $default_colors;
+		$args = wp_parse_args( $args, $default );
+		
 		
 		// Always query top tags
 		$tags = get_tags( array('orderby' => 'count', 'order' => 'DESC' ) );
@@ -140,25 +158,8 @@
 		/** @see WP_Widget::widget */
 		function widget( $args, $instance ) {
 			extract( $args );
-			
-			$default_colors = array(	'aqua', 'black', 'blue', 'fuchsia',
-										'gray', 'green', 'lime', 'maroon',
-										'navy', 'olive', 'purple', 'red',
-										'silver', 'teal', 'white', 'yellow');
-
-			$default['title']			= 'Tags';
-			$default['min_size']		= 8;
-			$default['max_size']		= 40;
-			$default['use_colors']		= true;
-			$default['use_color_names']	= true;
-			$default['number']			= 0;
-			$default['sort']			= 'random';
-			$default['order']			= 'ASC';
-			$default['color_names']		= $default_colors;
-			$instance = wp_parse_args( $instance, $default );
-			extract( $instance );
-			
-			$title = apply_filters( 'widget_title', $instance['title'] );
+						
+			$title = ( $instance['title'] ) ? apply_filters( 'widget_title', $instance['title'] ) : __('Tags') ;
 			
 			echo $before_widget;
 			echo $before_title . $title . $after_title;
