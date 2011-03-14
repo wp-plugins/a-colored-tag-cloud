@@ -3,8 +3,8 @@ Contributors: stevejohnson
 Donate link: http://ilikewordpress.com/donate/
 Tags: tag cloud, colored tag cloud
 Requires at least: 2.8
-Tested up to: 3.1-alpha
-stable tag: 2.0.1
+Tested up to: 3.1
+stable tag: 2.0.2
 
 Displays a configurable colored tag cloud as a widget, or in your template, or both.
 
@@ -25,7 +25,7 @@ To manually install:
 * Each widget can now be configured in its widget menu
 
 == Using in templates ==
-v2.0 now accepts options (optional) in a direct call to the function to set colors, etc. Usage:
+v2.0+ now accepts options (optional) in a direct call to the function to set colors, etc. Usage:
 
 ilwp_colored_tag_cloud( $options = array() );
 
@@ -47,6 +47,9 @@ Available options, and their defaults:
 
 == Changelog ==
 
+= 2.0.2 =
+* Added a sort order option, allowing users to sort the cloud in either direction. Added functionality so that if 'color names' field is left blank, colors default to the default color set.
+
 = 2.0.1 =
 * v2.0 introduced an error, "missing argument in line 30" for users calling the function directly from their templates. This has been fixed.
 
@@ -66,5 +69,8 @@ Available options, and their defaults:
 
 == Upgrade Notice ==
 
+= 2.0.2 =
+* This is a minor upgrade, adding a sort order to the options panel for each widget.
+
 = 2.0.1 =
-You should apply this upgrade if you are calling the ilwp_colored_tag_cloud function directly from your template.
+* You should apply this upgrade if you are calling the ilwp_colored_tag_cloud function directly from your template.

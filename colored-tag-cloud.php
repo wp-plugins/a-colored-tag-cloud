@@ -3,12 +3,12 @@
  * Plugin Name: ILWP Colored Tag Cloud
  * Plugin URI: http://ilikewordpress.com/colored-tag-cloud/
  * Description: An expansion of the standard WP tag cloud widget. Adds colors, min/max sizes, sort order and other options. For more info on the <acronym title="I Like WordPress!">ILWP</acronym> Colored Tag Cloud plugin, please <a href="http://ilikewordpress.com/colored-tag" title="The ILWP Colored Tag Cloud plugin home page">visit the plugin page</a>. Feel free to leave comments or post feature requests.
- * Version: 2.0.1
+ * Version: 2.0.2
  * Author: Steve Johnson
  * Author URI: http://ilikewordpress.com/
  */
 
-/*  Copyright 2009-2010 Steve Johnson  (email : steve@ilikewordpress.com)
+/*  Copyright 2009-2011 Steve Johnson  (email : steve@ilikewordpress.com)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-	define( 'ILWP_CTC_VERSION', 2.0 );
+	define( 'ILWP_CTC_VERSION', '2.0.2' );
 	
 	function ilwp_tag_cloud( $args = '' ) {
 		// for those calling the function directly from template,
@@ -40,12 +40,15 @@
 		$default['max_size']		= 40;
 		$default['number']			= 0;
 		$default['use_colors']		= true;
-		$default['use_color_names']	= true;
 		$default['sort']			= 'random';
 		$default['order']			= 'ASC';
 		$default['color_names']		= $default_colors;
+		
 		$args = wp_parse_args( $args, $default );
 		
+		## if they leave the colors field blank
+		if ( '' == $args['color_names'][0] )
+			$args['color_names'] = $default_colors;
 		
 		// Always query top tags
 		$tags = get_tags( array('orderby' => 'count', 'order' => 'DESC' ) );
@@ -62,17 +65,8 @@
 	function ilwp_generate_tag_cloud( $tags, $args = '' ) {
 		global $wp_rewrite;
 
-		$defaults = array(
-							'sort'		=> 'count',
-							'order'		=> 'ASC',
-							'number'	=> 0
-							);
-
-		## wp_parse_args merges $args & $defaults
-		## then generates variables from array keys
-		$args = wp_parse_args( $args, $defaults );
 		extract( $args );
-		// $min_size, $max_size, $number, $color_names, $use_colors, $use_color_names, $sort, $order
+		// $min_size, $max_size, $number, $color_names, $use_colors, $sort, $order
 
 		if ( 'random' == $sort ) {
 			shuffle($tags);
@@ -110,14 +104,13 @@
 		$a = array();
 		
 		$rel = ( is_object($wp_rewrite) && $wp_rewrite->using_permalinks() ) ? ' rel="tag"' : '';
-		$pre = ( $use_color_names ) ? '' : '#';
 		$c = sizeof( $color_names );
 		foreach ( $counts as $tag => $count ) {
 			$tag_id = $tag_ids[$tag];
 			$tag_link = clean_url($tag_links[$tag]);
 			if ( $use_colors ) :
-				$color = rand( 0, $c );
-				$colorstyle = " color: $pre" . $color_names[$color] . ";";
+				$color = rand( 0, $c - 1 );
+				$colorstyle = " color: " . $color_names[$color] . ";";
 			else :
 				$colorstyle = "";
 			endif;
@@ -158,7 +151,7 @@
 		/** @see WP_Widget::widget */
 		function widget( $args, $instance ) {
 			extract( $args );
-						
+
 			$title = ( $instance['title'] ) ? apply_filters( 'widget_title', $instance['title'] ) : __('Tags') ;
 			
 			echo $before_widget;
@@ -176,17 +169,17 @@
 			if ( $instance['max_size'] < $instance['min_size'] + 2 )
 				$instance['max_size'] = intval( $instance['min_size'] + 2 );
 			$instance['use_colors'] = $new_instance['use_colors'];
-			$instance['use_color_names'] = $new_instance['use_color_names'];
 			$instance['number'] = ( 0 == $new_instance['number'] ) ? 0 : intval( $new_instance['number'] );
 			$instance['sort'] = $new_instance['sort'];
+			$instance['order'] = $new_instance['order'];
 			
 				## get color names/numbers into an array
 				$str = $new_instance['color_names'];
+				## replace commas with spaces
+				$str = str_replace( ',', ' ', $str );
 				## replace spaces with pipes
 				$str = preg_replace('/\s+/', '|', $str);
 				$str = trim( $str, "|" );
-				## get rid of any hash marks ppl might have put in
-				$str = str_replace( '#', '', $str );				
 				$newcolors = explode( '|', $str );				
 			$instance['color_names'] = $newcolors;
 			
@@ -204,7 +197,6 @@
 			$default['min_size']		= 8;
 			$default['max_size']		= 40;
 			$default['use_colors']		= true;
-			$default['use_color_names']	= true;
 			$default['number']			= 0;
 			$default['sort']			= 'random';
 			$default['order']			= 'ASC';
@@ -216,7 +208,7 @@
 			$colors = implode( $instance['color_names'], "\r\n" );
 			?>
 			<p>
-				<label for="<?php echo $this->get_field_id('title'); ?>"><?php _e('Title:'); ?>
+				<label for="<?php echo $this->get_field_id('title'); ?>"><?php _e('Title:'); ?> <small>(default: Tags)</small>
 					<input class="widefat" id="<?php echo $this->get_field_id('title'); ?>" name="<?php echo $this->get_field_name('title'); ?>" type="text" value="<?php echo $title; ?>" />
 				</label>
 			</p>
@@ -238,30 +230,53 @@
 			<p>
 				<label for="<?php echo $this->get_field_id('sort'); ?>">Sort tags by: 
 					<select class="postform" id="<?php echo $this->get_field_id('sort'); ?>" name="<?php echo $this->get_field_name('sort'); ?>" >
-						<option value="count" <?php $selected = ($sort=='count')? 'selected="selected"' : ""; echo $selected; ?>>Most used to least used</option>
-						<option value="name" <?php $selected = ($sort=='name')? 'selected="selected"' : ""; echo $selected; ?>>Alphabetical A-Z</option>
+						<option value="count" <?php $selected = ($sort=='count')? 'selected="selected"' : ""; echo $selected; ?>>Popularity</option>
+						<option value="name" <?php $selected = ($sort=='name')? 'selected="selected"' : ""; echo $selected; ?>>Alphabetical</option>
 						<option value="random" <?php $selected = ($sort=='random')? 'selected="selected"' : ""; echo $selected; ?>>Random</option>
 					</select>
 				</label>
 			</p>
+			<script type="text/javascript">
+				jQuery(document).ready(function($) {
+					var sortFieldId = '<?php echo $this->get_field_id('sort'); ?>';
+					var orderFieldId = '<?php echo $this->get_field_id('order'); ?>';
+					var sortVal = $('#' + sortFieldId ).val();
+					if ( sortVal != 'random' ) {
+						$( 'p.p-' + orderFieldId ).show();
+					}
+					else {
+						$( 'p.p-' + orderFieldId ).hide();
+					}
+					$('#' + sortFieldId ).change( function() {
+						var sortval = $('#' + sortFieldId ).val();
+						if ( sortval != 'random' ) {
+							$( 'p.p-' + orderFieldId ).show('slow');
+						}
+						else {
+							$( 'p.p-' + orderFieldId ).hide('slow');
+						}
+					});
+				});
+			</script>
+			<p class="p-<?php echo $this->get_field_id('order'); ?>">
+				<label for="<?php echo $this->get_field_id('order'); ?>">Sort direction? Ascending (least to most, A-Z): 
+					<input class="static_class" id="<?php echo $this->get_field_id('order'); ?>-asc" name="<?php echo $this->get_field_name('order'); ?>" type="radio" value="ASC" <?php if ( 'ASC' == $order ) echo 'checked="checked"'; ?> />
+				</label>
+				<label for="<?php echo $this->get_field_id('order'); ?>"> Descending (most to least, Z-A): 
+					<input class="static_class" id="<?php echo $this->get_field_id('order'); ?>-desc" name="<?php echo $this->get_field_name('order'); ?>" type="radio" value="DESC" <?php if ( 'DESC' == $order ) echo 'checked="checked"'; ?> />
+				</label>
+			</p>
 			<p>
 				<label for="<?php echo $this->get_field_id('use_colors'); ?>">Use colors? yes: 
-					<input class="static_class" id="<?php echo $this->get_field_id('use_colors'); ?>" name="<?php echo $this->get_field_name('use_colors'); ?>" type="radio" value="1" <?php if ( 1 == $use_colors ) echo 'checked="checked"'; ?> />
+					<input class="static_class" id="<?php echo $this->get_field_id('use_colors'); ?>-yes" name="<?php echo $this->get_field_name('use_colors'); ?>" type="radio" value="1" <?php if ( 1 == $use_colors ) echo 'checked="checked"'; ?> />
 				</label>
 				<label for="<?php echo $this->get_field_id('use_colors'); ?>"> or no: 
-					<input class="static_class" id="<?php echo $this->get_field_id('use_colors'); ?>" name="<?php echo $this->get_field_name('use_colors'); ?>" type="radio" value="0" <?php if ( 0 == $use_colors ) echo 'checked="checked"'; ?> />
+					<input class="static_class" id="<?php echo $this->get_field_id('use_colors'); ?>-no" name="<?php echo $this->get_field_name('use_colors'); ?>" type="radio" value="0" <?php if ( 0 == $use_colors ) echo 'checked="checked"'; ?> />
+				</label>
 			</p>
 			<fieldset id="colors">
 				<p>
-					<label for="<?php echo $this->get_field_id('use_color_names'); ?>">Use color NAMES 
-						<input id="<?php echo $this->get_field_id('use_color_names'); ?>" name="<?php echo $this->get_field_name('use_color_names'); ?>" type="radio" value="1" <?php if ( 1 == $use_color_names ) echo 'checked="checked"'; ?> />
-					</label>
-					<label for="<?php echo $this->get_field_id('use_color_names'); ?>">or NUMBERS 
-						<input id="<?php echo $this->get_field_id('use_color_names'); ?>" name="<?php echo $this->get_field_name('use_color_names'); ?>" type="radio" value="0" <?php if ( 0 == $use_color_names ) echo 'checked="checked"'; ?> />
-					</label>
-				</p>
-				<p>
-					<label for="<?php echo $this->get_field_id('color_names'); ?>">Color names:<br /><small>You can use either named colors or hex color numbers, but not both. Do not enter the # mark if you're using numbers. If you're using numbers, you can use the shorthand 3-digit or full-length 6-digit number. Be sure to set the above 'names or numbers' option appropriately, or you will see unexpected results :-)</small><br />
+					<label for="<?php echo $this->get_field_id('color_names'); ?>">Color names:<br /><small>You can use either named colors or hex color numbers. If you're using a numbered color, you <strong>must</strong> use a hash mark (#) in front of the color code. You can use the shorthand 3-digit or full-length 6-digit number. You can separate colors by spaces, comma, or the &lt;enter&gt; key.<br/><br/>If you leave this field blank, the cloud will default to the following colors: <strong><span style="color: aqua">aqua</span>, <span style="color: black">black</span>, <span style="color: blue">blue</span>, <span style="color: fuchsia">fuchsia</span>, <span style="color: gray">gray</span>, <span style="color: green">green</span>, <span style="color: lime">lime</span>, <span style="color: maroon">maroon</span>, <span style="color: navy">navy</span>, <span style="color: olive">olive</span>, <span style="color: purple">purple</span>, <span style="color: red">red</span>, <span style="color: silver">silver</span>, <span style="color: teal">teal</span>, <span style="color: black">white</span>, <span style="color:yellow">yellow</span></strong>.</small><br />
 						<textarea id="<?php echo $this->get_field_id('color_names'); ?>" name="<?php echo $this->get_field_name('color_names'); ?>" rows="8" ><?php echo $colors; ?></textarea>
 					</label>
 				</p>
