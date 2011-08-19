@@ -3,7 +3,7 @@
  * Plugin Name: ILWP Colored Tag Cloud
  * Plugin URI: http://ilikewordpress.com/colored-tag-cloud/
  * Description: An expansion of the standard WP tag cloud widget. Adds colors, min/max sizes, sort order and other options. For more info on the <acronym title="I Like WordPress!">ILWP</acronym> Colored Tag Cloud plugin, please <a href="http://ilikewordpress.com/colored-tag" title="The ILWP Colored Tag Cloud plugin home page">visit the plugin page</a>. Feel free to leave comments or post feature requests.
- * Version: 2.0.2
+ * Version: 2.1
  * Author: Steve Johnson
  * Author URI: http://ilikewordpress.com/
  */
@@ -25,7 +25,8 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-	define( 'ILWP_CTC_VERSION', '2.0.2' );
+	define( 'ILWP_CTC_VERSION', '2.1' );
+	define( 'CTC_DEBUG', false );
 	
 	function ilwp_tag_cloud( $args = '' ) {
 		// for those calling the function directly from template,
@@ -39,7 +40,7 @@
 		$default['min_size']		= 8;
 		$default['max_size']		= 40;
 		$default['number']			= 0;
-		$default['use_colors']		= true;
+		$default['use_colors']		= 1;
 		$default['sort']			= 'random';
 		$default['order']			= 'ASC';
 		$default['color_names']		= $default_colors;
@@ -164,16 +165,16 @@
 		function update( $new_instance, $old_instance ) {
 			$instance = $old_instance;
 			$instance['title'] = strip_tags($new_instance['title']);
+			$instance['number'] = ( 0 == $new_instance['number'] ) ? 0 : intval( $new_instance['number'] );
 			$instance['min_size'] = ( $new_instance['min_size'] > 10 ) ? 10 : intval( $new_instance['min_size'] );
 			$instance['max_size'] = ( $new_instance['max_size'] > 40 && $instance['min_size'] < $new_instance['max_size'] ) ? 40 : intval( $new_instance['max_size'] );
 			if ( $instance['max_size'] < $instance['min_size'] + 2 )
 				$instance['max_size'] = intval( $instance['min_size'] + 2 );
 			$instance['use_colors'] = $new_instance['use_colors'];
-			$instance['number'] = ( 0 == $new_instance['number'] ) ? 0 : intval( $new_instance['number'] );
 			$instance['sort'] = $new_instance['sort'];
 			$instance['order'] = $new_instance['order'];
-			
-				## get color names/numbers into an array
+
+			## get color names/numbers into an array
 				$str = $new_instance['color_names'];
 				## replace commas with spaces
 				$str = str_replace( ',', ' ', $str );
@@ -196,12 +197,16 @@
 			$default['color_names']		= $default_colors;
 			$default['min_size']		= 8;
 			$default['max_size']		= 40;
-			$default['use_colors']		= true;
+			$default['use_colors']		= 1;
 			$default['number']			= 0;
 			$default['sort']			= 'random';
 			$default['order']			= 'ASC';
 
+			if ( CTC_DEBUG )
+				print_r( $default );
 			$instance = wp_parse_args( $instance, $default );
+			if ( CTC_DEBUG )
+				print_r( $instance );
 			extract( $instance );
 
 			$title = esc_attr( $instance['title']);
@@ -259,10 +264,10 @@
 				});
 			</script>
 			<p class="p-<?php echo $this->get_field_id('order'); ?>">
-				<label for="<?php echo $this->get_field_id('order'); ?>">Sort direction? Ascending (least to most, A-Z): 
+				Sort direction? <label style="margin-left: 10px; display: block;" for="<?php echo $this->get_field_id('order'); ?>">Ascending (least to most, A-Z): 
 					<input class="static_class" id="<?php echo $this->get_field_id('order'); ?>-asc" name="<?php echo $this->get_field_name('order'); ?>" type="radio" value="ASC" <?php if ( 'ASC' == $order ) echo 'checked="checked"'; ?> />
 				</label>
-				<label for="<?php echo $this->get_field_id('order'); ?>"> Descending (most to least, Z-A): 
+				<label style="margin-left: 10px; display: block;" for="<?php echo $this->get_field_id('order'); ?>"> Descending (most to least, Z-A): 
 					<input class="static_class" id="<?php echo $this->get_field_id('order'); ?>-desc" name="<?php echo $this->get_field_name('order'); ?>" type="radio" value="DESC" <?php if ( 'DESC' == $order ) echo 'checked="checked"'; ?> />
 				</label>
 			</p>
@@ -281,24 +286,9 @@
 					</label>
 				</p>
 			</fieldset>
-			<div style="padding: 10px; border: 1px dotted #ccc; margin-right: 10px; margin-left: 10px; text-align: center;">
-				<p><small>Donations help with the ongoing development and feature additions of <acronym title="I Like WordPress!">ILWP</acronym> Colored Tag Cloud. Thank you!</small></p>
-				<form action="https://www.paypal.com/cgi-bin/webscr" method="post">
-					<input type="hidden" name="cmd" value="_s-xclick" />
-					<input type="hidden" name="hosted_button_id" value="4176561" />
-					<input type="image" src="https://www.paypal.com/en_US/i/btn/btn_donateCC_LG.gif" name="submit" alt="PayPal - The safer, easier way to pay online!" />
-					<img alt="" border="0" src="https://www.paypal.com/en_US/i/scr/pixel.gif" width="1" height="1" />
-				</form>
-			</div>
 			<?php 
 		}
 	} // class ILWPColoredTagCloud
 
 	add_action('widgets_init', create_function('', 'return register_widget("ILWPColoredTagCloud");'));
-
-
-
-
-
-
 ?>

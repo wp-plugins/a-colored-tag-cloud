@@ -3,8 +3,8 @@ Contributors: stevejohnson
 Donate link: http://ilikewordpress.com/donate/
 Tags: tag cloud, colored tag cloud
 Requires at least: 2.8
-Tested up to: 3.1
-stable tag: 2.0.2
+Tested up to: 3.2.1
+stable tag: 2.1
 
 Displays a configurable colored tag cloud as a widget, or in your template, or both.
 
@@ -19,7 +19,7 @@ Installation is easy:
 
 To manually install:
 
-* Download the plugin.
+* Download and unzip the plugin file.
 * Copy the folder to the plugins directory of your blog.
 * Enable the plugin in your admin panel.
 * Each widget can now be configured in its widget menu
@@ -39,13 +39,16 @@ Available options, and their defaults:
 		$default['min_size']		= 8;
 		$default['max_size']		= 40;
 		$default['number']			= 0;
-		$default['use_colors']		= true;
-		$default['use_color_names']	= true;
+		$default['use_colors']		= 1;
+		$default['use_color_names']	= 1;
 		$default['sort']			= 'random';
 		$default['order']			= 'ASC';
 		$default['color_names']		= $default_colors;
 
 == Changelog ==
+
+= 2.1 =
+* Minor update for later WP versions 3.1 and up.
 
 = 2.0.2 =
 * Added a sort order option, allowing users to sort the cloud in either direction. Added functionality so that if 'color names' field is left blank, colors default to the default color set.
