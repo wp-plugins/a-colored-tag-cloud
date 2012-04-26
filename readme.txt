@@ -1,6 +1,6 @@
 === ILWP Colored Tag Cloud ===
 Contributors: stevejohnson
-Donate link: http://ilikewordpress.com/donate/
+Donate link: http://ilikewp.com/donate/
 Tags: tag cloud, colored tag cloud
 Requires at least: 2.8
 Tested up to: 3.4-alpha-20111

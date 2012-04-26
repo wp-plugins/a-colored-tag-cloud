@@ -1,14 +1,14 @@
 <?php
 /**
  * Plugin Name: ILWP Colored Tag Cloud
- * Plugin URI: http://ilikewordpress.com/colored-tag-cloud/
- * Description: An expansion of the standard WP tag cloud widget. Adds colors, min/max sizes, sort order and other options. For more info on the <acronym title="I Like WordPress!">ILWP</acronym> Colored Tag Cloud plugin, please <a href="http://ilikewordpress.com/colored-tag" title="The ILWP Colored Tag Cloud plugin home page">visit the plugin page</a>. Feel free to leave comments or post feature requests.
- * Version: 2.2
+ * Plugin URI: http://ilikewp.com/colored-tag-cloud/
+ * Description: An expansion of the standard WP tag cloud widget. Adds colors, min/max sizes, sort order and other options. For more info on the <acronym title="I Like WordPress!">ILWP</acronym> Colored Tag Cloud plugin, please <a href="http://ilikewp.com/colored-tag" title="The ILWP Colored Tag Cloud plugin home page">visit the plugin page</a>. Feel free to leave comments or post feature requests.
+ * Version: 2.2a
  * Author: Steve Johnson
- * Author URI: http://ilikewordpress.com/
+ * Author URI: http://ilikewp.com/
  */
 
-/*  Copyright 2009-2012 Steve Johnson  (email : steve@ilikewordpress.com)
+/*  Copyright 2009-2012 Steve Johnson  (email : steve@ilikewp.com)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -141,12 +141,11 @@
 	* ILWPColoredTagCloud Class
 	*/
 	class ILWPColoredTagCloud extends WP_Widget {
-		/** constructor */
+
 		function ILWPColoredTagCloud() {
 			$widget_ops = array('classname' => 'ilwp_widget_tag_cloud', 'description' => __( "A really cool COLORED tag cloud") );
 			$control_ops = array('width' => 400, 'height' => 350);
 			$this->WP_Widget( 'ilwp_tag_cloud', __('ILWP Colored Tag Cloud'), $widget_ops, $control_ops );
-			## parent::WP_Widget(false, $name = 'ILWPColoredTagCloud');
 		}
 
 		/** @see WP_Widget::widget */
