@@ -3,8 +3,8 @@ Contributors: stevejohnson
 Donate link: http://ilikewp.com/donate/
 Tags: tag cloud, colored tag cloud
 Requires at least: 2.8
-Tested up to: 3.4-alpha-20111
-stable tag: 2.2
+Tested up to: 3.6-alpha
+stable tag: 2.3
 
 Displays a configurable colored tag cloud as a widget, or in your template, or both.
 
@@ -46,6 +46,8 @@ Available options, and their defaults:
 		$default['color_names']		= $default_colors;
 
 == Changelog ==
+= 2.3 =
+* Removed deprecated functions, tested with WP v 3.6-alpha
 
 = 2.1 =
 * Minor update for later WP versions 3.1 and up.
