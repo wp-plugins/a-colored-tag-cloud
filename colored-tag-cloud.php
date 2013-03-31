@@ -3,7 +3,7 @@
  * Plugin Name: ILWP Colored Tag Cloud
  * Plugin URI: http://ilikewp.com/colored-tag-cloud/
  * Description: An expansion of the standard WP tag cloud widget. Adds colors, min/max sizes, sort order and other options. For more info on the <acronym title="I Like WordPress!">ILWP</acronym> Colored Tag Cloud plugin, please <a href="http://ilikewp.com/colored-tag" title="The ILWP Colored Tag Cloud plugin home page">visit the plugin page</a>. Feel free to leave comments or post feature requests.
- * Version: 2.4
+ * Version: 2.4.1
  * Author: Steve Johnson
  * Author URI: http://ilikewp.com/
  */
@@ -62,7 +62,7 @@
 
 		if ( is_wp_error( $return ) )
 			return false;
-		echo $return;
+		return $return;
 	}
 
 	function ilwp_generate_tag_cloud( $tags, $args = '' ) {
@@ -185,7 +185,7 @@
 			
 			echo $before_widget;
 			echo $before_title . $title . $after_title;
-			ilwp_tag_cloud( $instance );
+			echo ilwp_tag_cloud( $instance );
 			echo $after_widget . "\n\n";
 		}
 

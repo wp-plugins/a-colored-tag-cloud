@@ -4,7 +4,7 @@ Donate link: http://ilikewp.com/donate/
 Tags: tag cloud, colored tag cloud
 Requires at least: 2.8
 Tested up to: 3.6-alpha
-stable tag: 2.4
+stable tag: 2.4.1
 
 Displays a configurable colored tag cloud as a widget, or in your template, or both.
 
@@ -49,6 +49,9 @@ Available options, and their defaults:
 		$default['color_names']		= $default_colors;
 
 == Changelog ==
+= 2.4.1 =
+* Fixed an echo error in the shortcode handler.
+
 = 2.4 =
 * Added a shortcode handler, see the plugin page at http://ilikewp.com/colored-tag-cloud-for-wordpress-blogs/ for details on usage.
 
