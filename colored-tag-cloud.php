@@ -3,7 +3,7 @@
  * Plugin Name: ILWP Colored Tag Cloud
  * Plugin URI: http://ilikewp.com/colored-tag-cloud/
  * Description: An expansion of the standard WP tag cloud widget. Adds colors, min/max sizes, sort order and other options. For more info on the <acronym title="I Like WordPress!">ILWP</acronym> Colored Tag Cloud plugin, please <a href="http://ilikewp.com/colored-tag" title="The ILWP Colored Tag Cloud plugin home page">visit the plugin page</a>. Feel free to leave comments or post feature requests.
- * Version: 2.3
+ * Version: 2.4
  * Author: Steve Johnson
  * Author URI: http://ilikewp.com/
  */
@@ -122,6 +122,7 @@
 				. "px; $colorstyle'>$tag</a>";
 		}
 		$cloud = join( "\n", $a );
+		$cloud = "<div class='colored-tag-cloud'>" . $cloud . "</div>" . PHP_EOL;
 		return $cloud;
 	}
 	
@@ -133,6 +134,37 @@
 			delete_option( 'ilwp_widget_tag_cloud' );
 	}
 	add_action( 'init', 'ilwp_tc_setup' );
+	
+	/**
+	* ILWPColoredTagCloud shortcode handler
+	*/
+	function ilwp_shortcode( $atts ) {
+		/** never trust user input */
+		if ( isset( $atts['color_names'] ) ) {
+			$colors = explode( ',', $atts['color_names'] );
+			foreach ( $colors as $key => $color ) {
+				$color = strtolower( $color );
+				/** strip everything but a-z */
+				$colors[$key] = preg_replace( "/[^a-z]/i", '', $color );
+			}
+			$atts['color_names'] = $colors;
+		}
+		if ( isset( $atts['number'] ) )
+			$atts['number'] = intval( $atts['number'] );
+		if ( isset( $atts['max_size'] ) )
+			$atts['max_size'] = intval( $atts['max_size'] );
+		if ( isset( $atts['min_size'] ) )
+			$atts['min_size'] = intval( $atts['min_size'] );
+		if ( isset( $atts['sort'] ) )
+			$atts['sort'] = ( in_array( $atts['sort'], array( 'count', 'name', 'random' ) ) ) ? strtolower( $atts['sort'] ) : 'random';
+		if ( isset( $atts['order'] ) )
+			$atts['order'] = ( 'ASC' == strtoupper( $atts['order'] ) ) ? 'ASC' : 'DESC';
+		if ( isset( $atts['use_colors'] ) )
+			$atts['use_colors'] = ( in_array( $atts['use_colors'], array( 0, false, 'no') ) ) ? 0 : 1;
+		
+		return ilwp_tag_cloud( $atts );
+	}
+	add_shortcode( 'coloredtagcloud', 'ilwp_shortcode' );
 	
 	/**
 	* ILWPColoredTagCloud Widget
@@ -287,4 +319,3 @@
 	} // class ILWPColoredTagCloud
 
 	add_action( 'widgets_init', create_function( '', 'return register_widget( "ILWPColoredTagCloud" );' ) );
-?>

@@ -4,7 +4,7 @@ Donate link: http://ilikewp.com/donate/
 Tags: tag cloud, colored tag cloud
 Requires at least: 2.8
 Tested up to: 3.6-alpha
-stable tag: 2.3
+stable tag: 2.4
 
 Displays a configurable colored tag cloud as a widget, or in your template, or both.
 
@@ -25,9 +25,12 @@ To manually install:
 * Each widget can now be configured in its widget menu
 
 == Using in templates ==
-v2.0+ now accepts options (optional) in a direct call to the function to set colors, etc. Usage:
+Use the function in your theme files if desired. It is always advisable to wrap
+the function call in an 'if function_exists' statement.
 
-ilwp_colored_tag_cloud( $options = array() );
+Usage:
+if ( function_exists( 'ilwp_colored_tag_cloud' )
+	ilwp_colored_tag_cloud( $options = array() );
 
 Available options, and their defaults:
 
@@ -46,6 +49,9 @@ Available options, and their defaults:
 		$default['color_names']		= $default_colors;
 
 == Changelog ==
+= 2.4 =
+* Added a shortcode handler, see the plugin page at http://ilikewp.com/colored-tag-cloud-for-wordpress-blogs/ for details on usage.
+
 = 2.3 =
 * Removed deprecated functions, tested with WP v 3.6-alpha
 
