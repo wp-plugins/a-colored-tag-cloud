@@ -3,7 +3,7 @@
  * Plugin Name: ILWP Colored Tag Cloud
  * Plugin URI: http://ilikewp.com/colored-tag-cloud/
  * Description: An expansion of the standard WP tag cloud widget. Adds colors, min/max sizes, sort order and other options. For more info on the <acronym title="I Like WordPress!">ILWP</acronym> Colored Tag Cloud plugin, please <a href="http://ilikewp.com/colored-tag" title="The ILWP Colored Tag Cloud plugin home page">visit the plugin page</a>. Feel free to leave comments or post feature requests.
- * Version: 2.4.1
+ * Version: 2.4.2
  * Author: Steve Johnson
  * Author URI: http://ilikewp.com/
  */
@@ -32,22 +32,21 @@
 		// for those calling the function directly from template,
 		// add default arguments
 		
-		$default_colors = array(
-			'aqua', 'black', 'blue', 'fuchsia',
-			'gray', 'green', 'lime', 'maroon',
-			'navy', 'olive', 'purple', 'red',
-			'silver', 'teal', 'white', 'yellow'
+		$defaults = array(
+			'color_names'		=> array( 'aqua', 'black', 'blue', 'fuchsia',
+									'gray', 'green', 'lime', 'maroon',
+									'navy', 'olive', 'purple', 'red',
+									'silver', 'teal', 'white', 'yellow' ),
+			'min_size'			=> 8,
+			'max_size'			=> 40,
+			'use_colors'		=> 1,
+			'number'			=> 0,
+			'sort'				=> 'random',
+			'order'			=> 'ASC',
+			'title'			=> '',
 		);
 
-		$default['min_size']		= 8;
-		$default['max_size']		= 40;
-		$default['number']		= 0;
-		$default['use_colors']	= 1;
-		$default['sort']			= 'random';
-		$default['order']			= 'ASC';
-		$default['color_names']	= $default_colors;
-		
-		$args = wp_parse_args( $args, $default );
+		$args = wp_parse_args( $args, $defaults );
 		
 		## if they leave the colors field blank
 		if ( '' == $args['color_names'][0] )
@@ -174,7 +173,7 @@
 		function ILWPColoredTagCloud() {
 			$widget_ops = array( 'classname' => 'ilwp_widget_tag_cloud', 'description' => __( "A really cool COLORED tag cloud" ) );
 			$control_ops = array( 'width' => 400, 'height' => 350 );
-			$this->WP_Widget( 'ilwp_tag_cloud', __( 'ILWP Colored Tag Cloud' ), $widget_ops, $control_ops );
+			parent::__construct( 'ilwp_tag_cloud', __( 'ILWP Colored Tag Cloud' ), $widget_ops, $control_ops );
 		}
 
 		/** @see WP_Widget::widget */
@@ -218,23 +217,22 @@
 		/** @see WP_Widget::form */
 		function form( $instance ) {
 
-			$default_colors = array( 	'aqua', 'black', 'blue', 'fuchsia',
+			$defaults = array(
+				'color_names'		=> array( 'aqua', 'black', 'blue', 'fuchsia',
 										'gray', 'green', 'lime', 'maroon',
 										'navy', 'olive', 'purple', 'red',
-										'silver', 'teal', 'white', 'yellow' );
-			$default['color_names']		= $default_colors;
-			$default['min_size']		= 8;
-			$default['max_size']		= 40;
-			$default['use_colors']		= 1;
-			$default['number']			= 0;
-			$default['sort']			= 'random';
-			$default['order']			= 'ASC';
+										'silver', 'teal', 'white', 'yellow' ),
+				'min_size'			=> 8,
+				'max_size'			=> 40,
+				'use_colors'		=> 1,
+				'number'			=> 0,
+				'sort'				=> 'random',
+				'order'			=> 'ASC',
+				'title'			=> '',
+			);
 
-			if ( CTC_DEBUG )
-				print_r( $default );
-			$instance = wp_parse_args( $instance, $default );
-			if ( CTC_DEBUG )
-				print_r( $instance );
+			$instance = wp_parse_args( $instance, $defaults );
+
 			extract( $instance );
 
 			$title = esc_attr( $instance['title'] );
@@ -288,8 +286,9 @@
 						else {
 							$( 'p.p-' + orderFieldId ).hide( 'slow' );
 						}
-					} );
-				} );
+					});
+					
+				});
 			</script>
 			<p class="p-<?php echo $this->get_field_id( 'order' ); ?>">
 				Sort direction? <label style="margin-left: 10px; display: block;" for="<?php echo $this->get_field_id( 'order' ); ?>">Ascending ( least to most, A-Z ): 
@@ -307,10 +306,11 @@
 					<input class="static_class" id="<?php echo $this->get_field_id( 'use_colors' ); ?>-no" name="<?php echo $this->get_field_name( 'use_colors' ); ?>" type="radio" value="0" <?php if ( 0 == $use_colors ) echo 'checked="checked"'; ?> />
 				</label>
 			</p>
-			<fieldset id="colors">
+			<fieldset id="ctc-widget-colors">
 				<p>
-					<label for="<?php echo $this->get_field_id( 'color_names' ); ?>">Color names:<br /><small>You can use either named colors or hex color numbers. If you're using a numbered color, you <strong>must</strong> use a hash mark ( # ) in front of the color code. You can use the shorthand 3-digit or full-length 6-digit number. You can separate colors by spaces, comma, or the &lt;enter&gt; key.<br/><br/>If you leave this field blank, the cloud will default to the following colors: <strong><span style="color: aqua">aqua</span>, <span style="color: black">black</span>, <span style="color: blue">blue</span>, <span style="color: fuchsia">fuchsia</span>, <span style="color: gray">gray</span>, <span style="color: green">green</span>, <span style="color: lime">lime</span>, <span style="color: maroon">maroon</span>, <span style="color: navy">navy</span>, <span style="color: olive">olive</span>, <span style="color: purple">purple</span>, <span style="color: red">red</span>, <span style="color: silver">silver</span>, <span style="color: teal">teal</span>, <span style="color: black">white</span>, <span style="color:yellow">yellow</span></strong>.</small><br />
-						<textarea id="<?php echo $this->get_field_id( 'color_names' ); ?>" name="<?php echo $this->get_field_name( 'color_names' ); ?>" rows="8" ><?php echo $colors; ?></textarea>
+					<label for="<?php echo $this->get_field_id( 'color_names' ); ?>">Color names:<br />
+						<textarea class="widefat" id="<?php echo $this->get_field_id( 'color_names' ); ?>" name="<?php echo $this->get_field_name( 'color_names' ); ?>" rows="8" ><?php echo $colors; ?></textarea><br />
+							<small>You can use either named colors or hex color numbers. If you're using a numbered color, you <strong>must</strong> use a hash mark ( # ) in front of the color code. You can use the shorthand 3-digit or full-length 6-digit number. You can separate colors by spaces, comma, or the &lt;enter&gt; key.<br/><br/>If you leave this field blank, the cloud will default to the following colors: <strong><span style="color: aqua">aqua</span>, <span style="color: black">black</span>, <span style="color: blue">blue</span>, <span style="color: fuchsia">fuchsia</span>, <span style="color: gray">gray</span>, <span style="color: green">green</span>, <span style="color: lime">lime</span>, <span style="color: maroon">maroon</span>, <span style="color: navy">navy</span>, <span style="color: olive">olive</span>, <span style="color: purple">purple</span>, <span style="color: red">red</span>, <span style="color: silver">silver</span>, <span style="color: teal">teal</span>, <span style="color: black">white</span>, <span style="color:yellow">yellow</span></strong>.</small>
 					</label>
 				</p>
 			</fieldset>

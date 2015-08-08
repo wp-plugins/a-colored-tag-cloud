@@ -3,8 +3,8 @@ Contributors: stevejohnson
 Donate link: http://ilikewp.com/donate/
 Tags: tag cloud, colored tag cloud
 Requires at least: 2.8
-Tested up to: 3.9.2
-stable tag: 2.4.1
+Tested up to: 4.2.4
+stable tag: 2.4.2
 
 Displays a configurable colored tag cloud as a widget, or in your template, or both.
 
